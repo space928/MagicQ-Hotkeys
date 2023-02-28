@@ -1,4 +1,5 @@
 ; ### Global Setup
+#SingleInstance Force
 SetTitleMatchMode, 2 ; Match any title containing
 SendMode Input ; Allows for instant keypresses if no other keyboard hooks are installed
 SetDefaultMouseSpeed, 0 ; Move the mouse instantly, if mouse clicks are missed, maybe set to the default of 2
@@ -10,6 +11,19 @@ GroupAdd, CaptureAndMQ, Capture
 
 SysGet, MonitorCount, MonitorCount
 SysGet, Mon1, Monitorworkarea, 1 
+
+oscIp := "127.0.0.1"
+oscTXPort := 8000
+
+; Get handle to this running script instance
+Gui +LastFound
+hWnd := WinExist()
+
+; Load DLL
+DllCall("LoadLibrary", "Str", "OSC2AHK.dll", "Ptr")
+; success := DllCall("OSC2AHK.dll\open", UInt, hWnd, UInt, 8000)
+; if (success != 0)
+;     msgbox, Failed to open port! %success%
 
 ; ### Helper Functions
 ; Clicks on a spot and then gracefully returns the mouse back to where it was
@@ -41,6 +55,7 @@ QClickMQ(x, y)
 isSingle := true
 isSplit := false
 activePlaybackGo := -1
+activePlaybackGoInd := 11
 
 ; ### Keybinds
 #IfWinActive ahk_exe mqqt.exe
@@ -88,18 +103,20 @@ activePlaybackGo := -1
 	return      
 
 	F11:: ;All/Single
-	if isSingle
-	{
-		QClick(1890, 474)  ; All
-		isSingle := false
-	} else {
-		QClick(1890, 439)  ; Single
-		isSingle := true
-	}
+	QClick(1890, 439)  ; Single
+	; if isSingle
+	; {
+	; 	QClick(1890, 474)  ; All
+	; 	isSingle := false
+	; } else {
+	; 	QClick(1890, 439)  ; Single
+	; 	isSingle := true
+	; }
 	return      
 
 	F12::    
-	QClick(1856, 474)  ;Fan
+	QClick(1890, 474)  ; All
+	; QClick(1856, 474)  ;Fan
 	return
 	
 	
@@ -108,6 +125,10 @@ activePlaybackGo := -1
 	return
 	
 	^Delete::
+	QClick(1829, 768)  ;Remove
+	return
+	
+	+Delete::
 	QClick(1829, 768)  ;Remove
 	return
 	
@@ -133,81 +154,103 @@ activePlaybackGo := -1
 	; Set the playback the GO button acts on
 	^1::
 	activePlaybackGo := 156
+	activePlaybackGoInd := 1
 	return
 	^2::
 	activePlaybackGo := 306
+	activePlaybackGoInd := 2
 	return
 	^3::
 	activePlaybackGo := 460
+	activePlaybackGoInd := 3
 	return
 	^4::
 	activePlaybackGo := 611
+	activePlaybackGoInd := 4
 	return
 	^5::
 	activePlaybackGo := 762
+	activePlaybackGoInd := 5
 	return
 	^6::
 	activePlaybackGo := 917
+	activePlaybackGoInd := 6
 	return
 	^7::
 	activePlaybackGo := 1068
+	activePlaybackGoInd := 7
 	return
 	^8::
 	activePlaybackGo := 1221
+	activePlaybackGoInd := 8
 	return
 	^9::
 	activePlaybackGo := 1374
+	activePlaybackGoInd := 9
 	return
 	^0::
 	activePlaybackGo := 1526
+	activePlaybackGoInd := 10
 	return
 	^-::
 	activePlaybackGo := 1613
+	activePlaybackGoInd := 11
 	return
 	
 #If WinActive("ahk_exe mqqt.exe") and GetKeyState("CapsLock","T")
 	; CapsLock is show mode
 	Space::
-	QClick(activePlaybackGo, 870)  ; Play on active playback
+	addr := "/pb/" activePlaybackGoInd "/go"
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/go", Int, 1)
+	; QClick(activePlaybackGo, 870)  ; Play on active playback
 	return
 	
 	Right::
-	QClick(activePlaybackGo, 870)  ; Play on active playback
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/go", Int, 1)
+	; QClick(activePlaybackGo, 870)  ; Play on active playback
 	return
 	
 	^Space::
-	QClick(activePlaybackGo, 892)  ; Pause on active playback
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/pause", Int, 1)
+	; QClick(activePlaybackGo, 892)  ; Pause on active playback
 	return
 	
 	+Space::
-	QClick(activePlaybackGo, 892)  ; Pause on active playback
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/pause", Int, 1)
+	; QClick(activePlaybackGo, 892)  ; Pause on active playback
 	return
 	
 	Left::
-	QClick(activePlaybackGo, 892)  ; Pause on active playback
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/pause", Int, 1)
+	; QClick(activePlaybackGo, 892)  ; Pause on active playback
 	return
 	
 	
 #If WinActive("Capture") and GetKeyState("CapsLock","T")
 	; CapsLock is show mode
 	Space::
-	QClickMQ(activePlaybackGo, 870)  ; Play on active playback
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/go", Int, 1)
+	; QClickMQ(activePlaybackGo, 870)  ; Play on active playback
 	return
 	
 	Right::
-	QClickMQ(activePlaybackGo, 870)  ; Play on active playback
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/go", Int, 1)
+	; QClickMQ(activePlaybackGo, 870)  ; Play on active playback
 	return
 	
 	^Space::
-	QClickMQ(activePlaybackGo, 892)  ; Pause on active playback
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/pause", Int, 1)
+	; QClickMQ(activePlaybackGo, 892)  ; Pause on active playback
 	return
 	
 	+Space::
-	QClickMQ(activePlaybackGo, 892)  ; Pause on active playback
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/pause", Int, 1)
+	; QClickMQ(activePlaybackGo, 892)  ; Pause on active playback
 	return
 	
 	Left::
-	QClickMQ(activePlaybackGo, 892)  ; Pause on active playback
+	DllCall("OSC2AHK.dll\sendOscMessageInt", AStr, oscIp, UInt, oscTXPort, AStr, "/pb/" activePlaybackGoInd "/pause", Int, 1)
+	; QClickMQ(activePlaybackGo, 892)  ; Pause on active playback
 	return
 	
 
